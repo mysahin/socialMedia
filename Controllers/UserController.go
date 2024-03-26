@@ -12,5 +12,6 @@ func (user User) DoPublic(c *fiber.Ctx) error {
 	return nil
 }
 func (user User) Follow(c *fiber.Ctx) error {
+
 	return nil
 }

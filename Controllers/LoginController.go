@@ -53,6 +53,7 @@ func (login Login) SignUp(c *fiber.Ctx) error {
 }
 func (login Login) SignIn(c *fiber.Ctx) error {
 	db := Database.DB.Db
+	login.SignOut(c)
 
 	var user = new(Models.Login)
 	var compareUser = new(Models.Login)
