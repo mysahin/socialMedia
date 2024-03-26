@@ -5,6 +5,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
 	"socialMedia/Database"
+	"socialMedia/Helpers"
 	"socialMedia/Models"
 	"strconv"
 	"time"
@@ -100,15 +101,21 @@ func (login Login) SignIn(c *fiber.Ctx) error {
 	})
 }
 func (login Login) SignOut(c *fiber.Ctx) error {
-	cookie := fiber.Cookie{
-		Name:     "jwt",
-		Value:    "",
-		Expires:  time.Now().Add(time.Hour * 24),
-		HTTPOnly: true,
-	}
+	isLogin := Helpers.IsLogin(c)
+	if isLogin {
+		cookie := fiber.Cookie{
+			Name:     "jwt",
+			Value:    "",
+			Expires:  time.Now().Add(time.Hour * 24),
+			HTTPOnly: true,
+		}
 
-	c.Cookie(&cookie)
+		c.Cookie(&cookie)
+		return c.JSON(fiber.Map{
+			"message": "succesed to logout",
+		})
+	}
 	return c.JSON(fiber.Map{
-		"message": "succesed to logout",
+		"message": "Zaten giriş yapılı değilsiniz.",
 	})
 }
