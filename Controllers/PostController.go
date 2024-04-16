@@ -76,16 +76,21 @@ func (post Post) Delete(c *fiber.Ctx) error {
 func (post Post) Archive(c *fiber.Ctx) error {
 	isLogin := Helpers.IsLogin(c)
 	if isLogin {
+		id := getID(c)
+
 		db := Database.DB.Db
 		postID := c.Params("id")
 		var archivedPost Models.Post
-		if err := db.First(&archivedPost, postID).Error; err != nil {
-			return err
+		if postID == id {
+			if err := db.First(&archivedPost, postID).Error; err != nil {
+				return err
+			}
+			if err := db.Model(&archivedPost).Where("id=?", postID).Update("is_archive", "1").Error; err != nil {
+				return err
+			}
+			return c.JSON("Başarıyla arşivlendi.")
 		}
-		if err := db.Model(&archivedPost).Where("id=?", postID).Update("is_archive", "1").Error; err != nil {
-			return err
-		}
-		return c.JSON("Başarıyla arşivlendi.")
+		return c.JSON("Arşiv için yetkiniz yok!!!")
 	}
 	return c.JSON("lütfen giriş yapınız!!!")
 }
@@ -95,13 +100,17 @@ func (post Post) UnArchive(c *fiber.Ctx) error {
 		db := Database.DB.Db
 		postID := c.Params("id")
 		var archivedPost Models.Post
-		if err := db.First(&archivedPost, postID).Error; err != nil {
-			return err
+		id := getID(c)
+		if postID == id {
+			if err := db.First(&archivedPost, postID).Error; err != nil {
+				return err
+			}
+			if err := db.Model(&archivedPost).Where("id=?", postID).Update("is_archive", "0").Error; err != nil {
+				return err
+			}
+			return c.JSON("Başarıyla arşivden çıkarıldı.")
 		}
-		if err := db.Model(&archivedPost).Where("id=?", postID).Update("is_archive", "0").Error; err != nil {
-			return err
-		}
-		return c.JSON("Başarıyla arşivden çıkarıldı.")
+		return c.JSON("Arşiv için yetkiniz yok!!!")
 	}
 	return c.JSON("Önce giriş yapınız.")
 }
