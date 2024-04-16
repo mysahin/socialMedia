@@ -1,7 +1,7 @@
 package Controllers
 
 import (
-	"github.com/dgrijalva/jwt-go"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"socialMedia/Database"
 	"socialMedia/Helpers"
@@ -20,17 +20,8 @@ func (post Post) Share(c *fiber.Ctx) error {
 		if err := c.BodyParser(&_post); err != nil {
 			return err
 		}
-		cookie := c.Cookies("jwt")
-		token, err := jwt.ParseWithClaims(cookie, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
-			return []byte(SecretKey), nil
-		})
-		if err != nil {
-			return c.JSON(fiber.Map{
-				"error": err,
-			})
-		}
-		claims := token.Claims.(*jwt.StandardClaims)
-		db.First(&user, "id=?", claims.Issuer)
+		id := getID(c)
+		db.First(&user, "id=?", id)
 		newPost := Models.Post{
 			UserName:  user.UserName,
 			Write:     _post.Write,
@@ -56,17 +47,23 @@ func (post Post) Delete(c *fiber.Ctx) error {
 		db := Database.DB.Db
 		postID := c.Params("id")
 		var dPost Models.Post
-		if err := db.First(&dPost, postID).Error; err != nil {
-			return err
+
+		if err := db.First(&dPost, "id = ?", postID).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"message": "Gönderi bulunamadı.",
+			})
 		}
+
 		if err := db.Delete(&dPost).Error; err != nil {
 			return err
 		}
+
 		return c.JSON(fiber.Map{
 			"message": "Gönderi başarıyla silindi.",
 		})
 	}
-	return c.JSON(fiber.Map{
+
+	return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 		"message": "Lütfen önce giriş yapınız.",
 	})
 }
@@ -109,27 +106,21 @@ func (post Post) ViewPosts(c *fiber.Ctx) error {
 		db := Database.DB.Db
 		var viewPost []Models.Post
 		var users []Models.User
-		var followed []Models.Follow
-		var follower []Models.Follow
+		var follow []Models.Follow
+		var follower Models.Follow
 		var user Models.User
-		cookie := c.Cookies("jwt")
-		token, err := jwt.ParseWithClaims(cookie, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
-			return []byte(SecretKey), nil
-		})
-		if err != nil {
-			return c.JSON(fiber.Map{
-				"error": err,
-			})
-		}
-		claims := token.Claims.(*jwt.StandardClaims)
-		db.First(&user, "id=?", claims.Issuer)
+
+		id := getID(c)
+		db.First(&user, "id=?", id)
 		db.Find(&users)
-		db.Find(&follower)
+		fmt.Println(getID(c))
+
 		for _, y := range users {
-			db.Find(&followed, "followed_user_name=? AND follower_user_name=?", y.UserName, user.UserName)
+			db.First(&follower, "followed_user_name=? AND follower_user_name=?", y.UserName, user.UserName)
+			follow = append(follow, follower)
 		}
-		for _, b := range followed {
-			if err := db.Find(&viewPost, "is_archive=? AND user_name=?", false, b.FollowedUserName).Error; err != nil {
+		for _, a := range follow {
+			if err := db.Find(&viewPost, "user_name = ? AND is_archive = ?", a.FollowedUserName, false).Error; err != nil {
 				return err
 			}
 		}
@@ -142,4 +133,7 @@ func (post Post) ViewPosts(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"Message": "Önce giriş yapmalısınız!!!",
 	})
+
 }
+
+//asdf1213

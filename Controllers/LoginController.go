@@ -34,11 +34,11 @@ func (login Login) SignUp(c *fiber.Ctx) error {
 		Name:     user.Name,
 		LastName: user.LastName,
 		UserName: user.UserName,
-		Password: string(password[:]),
+		Password: string(password[]),
 	}
 	newUserLogin := Models.Login{
 		UserName: user.UserName,
-		Password: string(password[:]),
+		Password: string(password[]),
 	}
 	if err := db.Create(&newUserLogin).Error; err != nil {
 		return err
@@ -79,7 +79,7 @@ func (login Login) SignIn(c *fiber.Ctx) error {
 
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
 		Issuer:    strconv.Itoa(int(compareUser.ID)),
-		ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
+		ExpiresAt: time.Now().Add(time.Hour * 1).Unix(),
 	})
 	token, err := claims.SignedString([]byte(SecretKey))
 	if err != nil {
@@ -92,7 +92,7 @@ func (login Login) SignIn(c *fiber.Ctx) error {
 	cookie := fiber.Cookie{
 		Name:     "jwt",
 		Value:    token,
-		Expires:  time.Now().Add(time.Hour * 24),
+		Expires:  time.Now().Add(time.Hour * 1),
 		HTTPOnly: true,
 	}
 	c.Cookie(&cookie)
@@ -107,16 +107,16 @@ func (login Login) SignOut(c *fiber.Ctx) error {
 		cookie := fiber.Cookie{
 			Name:     "jwt",
 			Value:    "",
-			Expires:  time.Now().Add(time.Hour * 24),
+			Expires:  time.Now().Add(time.Hour * 1),
 			HTTPOnly: true,
 		}
 
 		c.Cookie(&cookie)
 		return c.JSON(fiber.Map{
-			"message": "succesed to logout",
+			"message": "succeed to logout",
 		})
 	}
 	return c.JSON(fiber.Map{
-		"message": "Zaten giriş yapılı değilsiniz.",
+		"message": "Zaten giriş yapılmamış!",
 	})
 }
