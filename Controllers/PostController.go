@@ -6,6 +6,7 @@ import (
 	"socialMedia/Database"
 	"socialMedia/Helpers"
 	"socialMedia/Models"
+	"strconv"
 )
 
 type Post struct {
@@ -53,13 +54,18 @@ func (post Post) Delete(c *fiber.Ctx) error {
 				"message": "Gönderi bulunamadı.",
 			})
 		}
+		id := getID(c)
+		if strconv.FormatUint(uint64(dPost.ID), 10) == id {
+			if err := db.Delete(&dPost).Error; err != nil {
+				return err
+			}
 
-		if err := db.Delete(&dPost).Error; err != nil {
-			return err
+			return c.JSON(fiber.Map{
+				"message": "Gönderi başarıyla silindi.",
+			})
 		}
-
 		return c.JSON(fiber.Map{
-			"message": "Gönderi başarıyla silindi.",
+			"message": "Bu gönderiyi silme yetkiniz yok!!!",
 		})
 	}
 
@@ -105,6 +111,7 @@ func (post Post) ViewPosts(c *fiber.Ctx) error {
 	if isLogin {
 		db := Database.DB.Db
 		var viewPost []Models.Post
+		var post []Models.Post
 		var users []Models.User
 		var follow []Models.Follow
 		var follower Models.Follow
@@ -124,7 +131,10 @@ func (post Post) ViewPosts(c *fiber.Ctx) error {
 				return err
 			}
 		}
-
+		db.Find(&post, "user_name = ? AND is_archive = ?", user.UserName, false)
+		for a, _ := range post {
+			viewPost = append(viewPost, post[a])
+		}
 		return c.JSON(fiber.Map{
 			"Postlar": viewPost,
 		})

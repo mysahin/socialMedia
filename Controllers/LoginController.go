@@ -34,11 +34,11 @@ func (login Login) SignUp(c *fiber.Ctx) error {
 		Name:     user.Name,
 		LastName: user.LastName,
 		UserName: user.UserName,
-		Password: string(password[]),
+		Password: string(password[:]),
 	}
 	newUserLogin := Models.Login{
 		UserName: user.UserName,
-		Password: string(password[]),
+		Password: string(password[:]),
 	}
 	if err := db.Create(&newUserLogin).Error; err != nil {
 		return err
