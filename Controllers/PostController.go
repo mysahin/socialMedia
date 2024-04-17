@@ -13,7 +13,10 @@ type Post struct {
 }
 
 func (post Post) Share(c *fiber.Ctx) error {
-	fileName := UploadFile(c)
+	fileName, err := UploadFile(c)
+	if err != nil {
+		return c.JSON("hata var!!!")
+	}
 	fmt.Println(fileName)
 	isLogin := Helpers.IsLogin(c)
 	if isLogin {
