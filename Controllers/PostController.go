@@ -13,6 +13,8 @@ type Post struct {
 }
 
 func (post Post) Share(c *fiber.Ctx) error {
+	fileName := UploadFile(c)
+	fmt.Println(fileName)
 	isLogin := Helpers.IsLogin(c)
 	if isLogin {
 		db := Database.DB.Db
@@ -33,8 +35,9 @@ func (post Post) Share(c *fiber.Ctx) error {
 			return err
 		}
 		return c.JSON(fiber.Map{
-			"message": "Yeni gönderi başarıyla paylaşıldı.",
-			"post":    newPost,
+			"filename": fileName,
+			"message":  "Yeni gönderi başarıyla paylaşıldı.",
+			"post":     newPost,
 		})
 	}
 
@@ -141,7 +144,7 @@ func (post Post) ViewPosts(c *fiber.Ctx) error {
 			}
 		}
 		db.Find(&post, "user_name = ? AND is_archive = ?", user.UserName, false)
-		for a, _ := range post {
+		for a := range post {
 			viewPost = append(viewPost, post[a])
 		}
 		return c.JSON(fiber.Map{

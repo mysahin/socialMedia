@@ -18,6 +18,9 @@ func Routes() *fiber.App {
 	r.Post("/follow/:id", Controllers.User{}.Follow)
 	r.Post("/secret", Controllers.User{}.DoSecret)
 	r.Post("/un-secret", Controllers.User{}.DoPublic)
+	r.Get("/list", Controllers.ListFiles)
+	r.Get("/show/:filename", Controllers.ShowFile)
+	r.Post("/delete/:filename", Controllers.DeleteFile)
 
 	return r
 }

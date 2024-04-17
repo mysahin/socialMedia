@@ -5,6 +5,7 @@ go 1.22.1
 require (
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
+	github.com/aws/aws-sdk-go v1.51.22 // indirect
 	github.com/bep/godartsass v1.2.0 // indirect
 	github.com/bep/godartsass/v2 v2.0.0 // indirect
 	github.com/bep/golibsass v1.1.1 // indirect
