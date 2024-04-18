@@ -2,72 +2,89 @@ package Controllers
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/gofiber/fiber/v2"
 	"io"
 	"mime"
 	"net/http"
 	"path/filepath"
+	database "socialMedia/Database"
+	"socialMedia/Models"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/gofiber/fiber/v2"
 )
 
-var region string = "eu-north-1"
-var accessKey string = "AKIAQ3EGTZABT7PRWHUS"
-var secretKey string = "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"
+// FileController handles file operations.
+type FileController struct {
+	uploader   *s3manager.Uploader
+	downloader *s3.S3
+	bucketName string
+}
 
-var uploader *s3manager.Uploader
-var downloader *s3.S3
+func NewFileController(uploader *s3manager.Uploader, downloader *s3.S3, bucketName string) *FileController {
+	if uploader == nil || downloader == nil {
+		panic("uploader and downloader cannot be nil")
+	}
+	return &FileController{
+		uploader:   uploader,
+		downloader: downloader,
+		bucketName: bucketName,
+	}
+}
 
-var bucketName string = "social-media-mysahin"
-
-func UploadFile(c *fiber.Ctx) (*string, error) {
-	var name string
+// UploadFile uploads files to S3.
+func (fc *FileController) UploadFile(c *fiber.Ctx) error {
+	db := database.DB.Db
 	form, err := c.MultipartForm()
 	if err != nil {
-		return nil, err
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-
+	var uploadedFile Models.Files
 	files := form.File["files"]
-
+	var uploadedURLs []string
 	for _, file := range files {
 		fileHeader := file
-
 		f, err := fileHeader.Open()
 		if err != nil {
-			return nil, err
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 		defer f.Close()
 
-		filename := fixFileName(fileHeader.Filename)
-		name = filename
-
-		_, err = saveFile(f, filename)
+		uploadedURL, err := fc.saveFile(f, fileHeader.Filename)
 		if err != nil {
-			return nil, err
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
+		uploadedURLs = append(uploadedURLs, uploadedURL)
+		uploadedFile.FileName = fileHeader.Filename
+		if err := db.Create(&uploadedFile).Error; err != nil {
+			return err
+		}
+
 	}
 
-	return &name, nil
+	return c.Status(http.StatusOK).JSON(fiber.Map{"urls": uploadedURLs})
 }
 
+// fixFileName replaces special characters in filenames.
 func fixFileName(filename string) string {
-	// Türkçe karakterleri ingilizce karakterlere dönüştür
 	replacer := strings.NewReplacer("ı", "i", "ğ", "g", "ü", "u", "ş", "s", "ö", "o", "ç", "c", "İ", "I", "Ğ", "G", "Ü", "U", "Ş", "S", "Ö", "O", "Ç", "C")
 	filename = replacer.Replace(filename)
 
-	// Boşlukları kaldır
+	// Remove spaces
 	filename = strings.ReplaceAll(filename, " ", "")
 
 	return filename
 }
 
-func saveFile(fileReader io.Reader, filename string) (string, error) {
+// saveFile uploads a file to S3 and returns the URL.
+func (fc *FileController) saveFile(fileReader io.Reader, filename string) (string, error) {
+	filename = fixFileName(filename)
+
 	// Upload the file to S3 using the fileReader
-	_, err := uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(bucketName),
+	_, err := fc.uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(fc.bucketName),
 		Key:    aws.String(filename),
 		Body:   fileReader,
 	})
@@ -76,14 +93,15 @@ func saveFile(fileReader io.Reader, filename string) (string, error) {
 	}
 
 	// Get the URL of the uploaded file
-	url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucketName, filename)
+	url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", fc.bucketName, filename)
 
 	return url, nil
 }
 
-func ListFiles(c *fiber.Ctx) error {
-	resp, err := downloader.ListObjectsV2(&s3.ListObjectsV2Input{
-		Bucket: aws.String(bucketName),
+// ListFiles lists all files in the S3 bucket.
+func (fc *FileController) ListFiles(c *fiber.Ctx) error {
+	resp, err := fc.downloader.ListObjectsV2(&s3.ListObjectsV2Input{
+		Bucket: aws.String(fc.bucketName),
 	})
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
@@ -97,10 +115,11 @@ func ListFiles(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).JSON(fiber.Map{"filenames": filenames})
 }
 
-func ShowFile(c *fiber.Ctx) error {
+// ShowFile retrieves and sends a file from S3.
+func (fc *FileController) ShowFile(c *fiber.Ctx) error {
 	filename := c.Params("filename")
-	obj, err := downloader.GetObject(&s3.GetObjectInput{
-		Bucket: aws.String(bucketName),
+	obj, err := fc.downloader.GetObject(&s3.GetObjectInput{
+		Bucket: aws.String(fc.bucketName),
 		Key:    aws.String(filename),
 	})
 	if err != nil {
@@ -125,19 +144,20 @@ func ShowFile(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).Send(content)
 }
 
-func DeleteFile(c *fiber.Ctx) error {
+// DeleteFile deletes a file from S3.
+func (fc *FileController) DeleteFile(c *fiber.Ctx) error {
 	filename := c.Params("filename")
 
-	// Dosyayı S3'den sil
-	_, err := downloader.DeleteObject(&s3.DeleteObjectInput{
-		Bucket: aws.String(bucketName),
+	// Delete the file from S3
+	_, err := fc.downloader.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: aws.String(fc.bucketName),
 		Key:    aws.String(filename),
 	})
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	fmt.Printf("Dosya '%s' başarıyla silindi.\n", filename)
+	fmt.Printf("File '%s' successfully deleted.\n", filename)
 
 	return c.SendStatus(http.StatusOK)
 }

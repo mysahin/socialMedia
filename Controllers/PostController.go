@@ -13,11 +13,6 @@ type Post struct {
 }
 
 func (post Post) Share(c *fiber.Ctx) error {
-	fileName, err := UploadFile(c)
-	if err != nil {
-		return c.JSON("hata var!!!")
-	}
-	fmt.Println(fileName)
 	isLogin := Helpers.IsLogin(c)
 	if isLogin {
 		db := Database.DB.Db
@@ -33,14 +28,12 @@ func (post Post) Share(c *fiber.Ctx) error {
 			Write:     _post.Write,
 			IsArchive: false,
 		}
-
 		if err := db.Create(&newPost).Error; err != nil {
 			return err
 		}
 		return c.JSON(fiber.Map{
-			"filename": fileName,
-			"message":  "Yeni gönderi başarıyla paylaşıldı.",
-			"post":     newPost,
+			"message": "Yeni gönderi başarıyla paylaşıldı.",
+			"post":    newPost,
 		})
 	}
 

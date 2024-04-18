@@ -25,7 +25,7 @@ func Connect() {
 	log.Println("connected success")
 	db.Logger = logger.Default.LogMode(logger.Info)
 	log.Println("running migrations")
-	db.AutoMigrate(Models.User{}, Models.Login{}, Models.Post{}, Models.Follow{})
+	db.AutoMigrate(Models.User{}, Models.Login{}, Models.Post{}, Models.Follow{}, Models.Files{})
 	DB = Dbinstance{
 		Db: db,
 	}
