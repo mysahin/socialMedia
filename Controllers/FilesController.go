@@ -56,8 +56,10 @@ func (fc *FileController) UploadFile(c *fiber.Ctx) error {
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
+
 		uploadedURLs = append(uploadedURLs, uploadedURL)
 		uploadedFile.FileName = fileHeader.Filename
+		uploadedFile.FileName = fixFileName(uploadedFile.FileName)
 		if err := db.Create(&uploadedFile).Error; err != nil {
 			return err
 		}
