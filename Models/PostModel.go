@@ -7,4 +7,5 @@ type Post struct {
 	UserName  string `json:"user_name"`
 	Write     string `json:"write"`
 	IsArchive bool   `json:"is_archive"`
+	FileId    uint   `json:"file_id"`
 }

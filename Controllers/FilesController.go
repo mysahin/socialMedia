@@ -23,6 +23,8 @@ type FileController struct {
 	bucketName string
 }
 
+var FileId uint = 0
+
 func NewFileController(uploader *s3manager.Uploader, downloader *s3.S3, bucketName string) *FileController {
 	if uploader == nil || downloader == nil {
 		panic("uploader and downloader cannot be nil")
@@ -63,7 +65,7 @@ func (fc *FileController) UploadFile(c *fiber.Ctx) error {
 		if err := db.Create(&uploadedFile).Error; err != nil {
 			return err
 		}
-
+		FileId = uploadedFile.ID
 	}
 
 	return c.Status(http.StatusOK).JSON(fiber.Map{"urls": uploadedURLs})
@@ -162,4 +164,9 @@ func (fc *FileController) DeleteFile(c *fiber.Ctx) error {
 	fmt.Printf("File '%s' successfully deleted.\n", filename)
 
 	return c.SendStatus(http.StatusOK)
+}
+
+func GetFileId() uint {
+	fileId := FileId
+	return fileId
 }

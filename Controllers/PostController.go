@@ -23,10 +23,12 @@ func (post Post) Share(c *fiber.Ctx) error {
 		}
 		id := getID(c)
 		db.First(&user, "id=?", id)
+		fileId := GetFileId()
 		newPost := Models.Post{
 			UserName:  user.UserName,
 			Write:     _post.Write,
 			IsArchive: false,
+			FileId:    fileId,
 		}
 		if err := db.Create(&newPost).Error; err != nil {
 			return err
@@ -121,10 +123,10 @@ func (post Post) ViewPosts(c *fiber.Ctx) error {
 		var viewPost []Models.Post
 		var post []Models.Post
 		var users []Models.User
+		var files []Models.Files
 		var follow []Models.Follow
 		var follower Models.Follow
 		var user Models.User
-
 		id := getID(c)
 		db.First(&user, "id=?", id)
 		db.Find(&users)
@@ -139,12 +141,17 @@ func (post Post) ViewPosts(c *fiber.Ctx) error {
 				return err
 			}
 		}
+		var file Models.Files
 		db.Find(&post, "user_name = ? AND is_archive = ?", user.UserName, false)
 		for a := range post {
 			viewPost = append(viewPost, post[a])
+
+			db.First(&file, "id=?", post[a].ID)
+			files = append(files, file)
 		}
 		return c.JSON(fiber.Map{
 			"Postlar": viewPost,
+			"Dosya":   files,
 		})
 	}
 
