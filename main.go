@@ -13,7 +13,6 @@ import (
 func main() {
 	Database.Connect()
 
-	// AWS oturumunu oluştur
 	awsSession, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
 		Credentials: credentials.NewStaticCredentials(
@@ -27,14 +26,11 @@ func main() {
 		panic(err)
 	}
 
-	// S3 Yükleyici ve İndiriciyi başlat
 	uploader := s3manager.NewUploader(awsSession)
 	downloader := s3.New(awsSession)
 
-	// Router.Routes fonksiyonunu çağırırken gerekli parametreleri ekleyin
 	app := Router.Routes(uploader, downloader, bucketName)
 
-	// Uygulamayı dinle
 	err = app.Listen(":8000")
 	if err != nil {
 		panic(err)

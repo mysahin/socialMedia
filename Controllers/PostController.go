@@ -141,13 +141,13 @@ func (post Post) ViewPosts(c *fiber.Ctx) error {
 				return err
 			}
 		}
-		var file Models.Files
+		var file []Models.Files
 		db.Find(&post, "user_name = ? AND is_archive = ?", user.UserName, false)
 		for a := range post {
 			viewPost = append(viewPost, post[a])
 
 			db.First(&file, "id=?", post[a].ID)
-			files = append(files, file)
+			files = append(files, file[a])
 		}
 		return c.JSON(fiber.Map{
 			"Postlar": viewPost,
