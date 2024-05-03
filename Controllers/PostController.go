@@ -117,7 +117,7 @@ func (post Post) UnArchive(c *fiber.Ctx) error {
 }
 
 func (post Post) ViewPosts(c *fiber.Ctx) error {
-	isLogin := Helpers.IsLogin(c)
+	isLogin := false
 	if isLogin {
 		db := Database.DB.Db
 		var viewPost []Models.Post

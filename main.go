@@ -31,7 +31,7 @@ func main() {
 
 	app := Router.Routes(uploader, downloader, bucketName)
 
-	err = app.Listen(":8000")
+	err = app.Listen(":8080")
 	if err != nil {
 		panic(err)
 	}

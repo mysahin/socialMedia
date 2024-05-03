@@ -15,7 +15,7 @@ type Dbinstance struct {
 var DB Dbinstance
 
 func Connect() {
-	var dsn = "root:@tcp(127.0.0.1:3306)/socialMedia?charset=utf8mb4&parseTime=True&loc=Local"
+	var dsn = "root:password@tcp(db:3306)/db"
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})

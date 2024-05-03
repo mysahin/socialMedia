@@ -53,8 +53,6 @@ func (login Login) SignUp(c *fiber.Ctx) error {
 }
 func (login Login) SignIn(c *fiber.Ctx) error {
 	db := Database.DB.Db
-	login.SignOut(c)
-
 	var user = new(Models.Login)
 	var compareUser = new(Models.Login)
 	if err := c.BodyParser(&user); err != nil {
@@ -62,7 +60,7 @@ func (login Login) SignIn(c *fiber.Ctx) error {
 	}
 	if err := db.First(&compareUser, "user_name=?", user.UserName).Error; err != nil {
 		return c.JSON(fiber.Map{
-			"error": err,
+			"error": "",
 		})
 	}
 	if compareUser.ID == 0 {
